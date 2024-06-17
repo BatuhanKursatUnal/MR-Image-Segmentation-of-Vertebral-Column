@@ -109,3 +109,51 @@ for masks in sorted_mr_maskfiles:
     # An alternative way to extract information about number of slices and pixel size
     image_size2 = mr_mask_metainf.shape
     size_list2.append(image_size2) # (Z, Y, X), i.e. (# of slices, height, width)
+    
+    
+    
+# Cropping out the non-spine voxels
+mr_image_path1 = '/Volumes/WD Elements/Pattern Recognition/Project/images/1_t1.mha'
+mr_mask_path1 = '/Volumes/WD Elements/Pattern Recognition/Project/masks/1_t1.mha'
+
+mr_image1 = sitk.ReadImage(mr_image_path1)
+mask_image1 = sitk.ReadImage(mr_mask_path1)
+
+mr_arr1 = sitk.GetArrayFromImage(mr_image1)
+mask_arr1 = sitk.GetArrayFromImage(mask_image1)
+
+    
+#Method 1
+non_zero_coords = np.argwhere(mask_arr1)
+start = non_zero_coords.min(axis=0)
+end = non_zero_coords.max(axis=0) + 1  # +1 to include the end slice
+
+cropped_mr_image = sitk.GetArrayFromImage(mr_image1)[start[0]:end[0], start[1]:end[1], :]
+
+# Converting the cropped image to a SimpleITK image
+cropped_mr_image_sitk = sitk.GetImageFromArray(cropped_mr_image)
+
+# Saving the cropped MR image
+output_path = '/Volumes/WD Elements/Pattern Recognition/Project/output/cropped_mr_image2.mha'  # Replace with the desired output path
+sitk.WriteImage(cropped_mr_image_sitk, output_path)
+
+
+#Method 2
+cropped_imarr = np.zeros_like(mr_arr1)
+for s in range(mask_arr1.shape[2]):
+    for r in range(mask_arr1.shape[0]):
+        for c in range(mask_arr1.shape[1]):
+            if mask_arr1[r, c, s] > 0:
+                cropped_imarr[r, c, s] = mr_arr1[r, c, s]
+
+# Converting the cropped array back to a SimpleITK image
+cropped_imarr_sitk = sitk.GetImageFromArray(cropped_imarr)
+
+# Setting the origin, spacing, and direction of the cropped image to match the original image
+cropped_imarr_sitk.SetOrigin(mr_image1.GetOrigin())
+cropped_imarr_sitk.SetSpacing(mr_image1.GetSpacing())
+cropped_imarr_sitk.SetDirection(mr_image1.GetDirection())
+
+cropped_imarr_sitk = sitk.GetImageFromArray(cropped_imarr)
+output_path = '/Volumes/WD Elements/Pattern Recognition/Project/output/cropped_mr_image3.mha'  # Replace with the desired output path
+sitk.WriteImage(cropped_imarr_sitk, output_path)

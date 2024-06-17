@@ -113,8 +113,8 @@ for masks in sorted_mr_maskfiles:
     
     
 # Cropping out the non-spine voxels
-mr_image_path1 = '/Volumes/WD Elements/Pattern Recognition/Project/images/1_t1.mha'
-mr_mask_path1 = '/Volumes/WD Elements/Pattern Recognition/Project/masks/1_t1.mha'
+mr_image_path1 = 'pathtodataset/images/arbitraryimage.mha'
+mr_mask_path1 = 'pathtodataset/masks/arbitraryimage.mha'
 
 mr_image1 = sitk.ReadImage(mr_image_path1)
 mask_image1 = sitk.ReadImage(mr_mask_path1)
@@ -134,7 +134,7 @@ cropped_mr_image = sitk.GetArrayFromImage(mr_image1)[start[0]:end[0], start[1]:e
 cropped_mr_image_sitk = sitk.GetImageFromArray(cropped_mr_image)
 
 # Saving the cropped MR image
-output_path = '/Volumes/WD Elements/Pattern Recognition/Project/output/cropped_mr_image2.mha'  # Replace with the desired output path
+output_path = 'pathtodataset/output/cropped_mr_image2.mha'  # Replace with the desired output path
 sitk.WriteImage(cropped_mr_image_sitk, output_path)
 
 
@@ -155,5 +155,5 @@ cropped_imarr_sitk.SetSpacing(mr_image1.GetSpacing())
 cropped_imarr_sitk.SetDirection(mr_image1.GetDirection())
 
 cropped_imarr_sitk = sitk.GetImageFromArray(cropped_imarr)
-output_path = '/Volumes/WD Elements/Pattern Recognition/Project/output/cropped_mr_image3.mha'  # Replace with the desired output path
+output_path = 'pathtodataset/cropped_mr_image3.mha'  # Replace with the desired output path
 sitk.WriteImage(cropped_imarr_sitk, output_path)

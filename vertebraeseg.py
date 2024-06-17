@@ -80,6 +80,8 @@ for files in sorted_mr_imagefiles:
     
     image_size = mr_image_meta.GetSize()
     size_list += [image_size] #Image size information of each MR image in the dataset
+                                #(X, Y, Z), i.e. (width, height, # of slices) for T1 and T2 images
+                                #(Z, Y, X), i.e. (# of slices, height, width) for images with SPACE sequence
     
 
 # Investigating segmentation masks

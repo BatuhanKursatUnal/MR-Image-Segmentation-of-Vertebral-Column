@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue May 14 16:28:15 2024
-
-@author: batuhanmac
-"""
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -157,3 +149,57 @@ cropped_imarr_sitk.SetDirection(mr_image1.GetDirection())
 cropped_imarr_sitk = sitk.GetImageFromArray(cropped_imarr)
 output_path = 'pathtodataset/cropped_mr_image3.mha'  # Replace with the desired output path
 sitk.WriteImage(cropped_imarr_sitk, output_path)
+
+
+#Method 3
+
+def crop_nonspinal(mr_image_inp, mr_array_inp):
+    '''
+
+    Parameters
+    ----------
+    mr_image : Raw MR image
+    mr_array : Array extracted from raw MR image
+
+    Returns
+    -------
+    MR image with non-spinal voxels cropped out
+
+    '''
+    #Thresholding
+    th_im = sitk.BinaryThreshold(mr_image, lowerThreshold=175, upperThreshold=255, insideValue=1, outsideValue=0) #Thresholded image
+
+    #Morphological Operation
+    radius_morph = [1, 1, 1]
+    ##Closing (Gives the best results)
+    th_im_closed = sitk.BinaryMorphologicalClosing(seg, radius_morph) #Image that went through closing operation
+    
+    #Connected Component Analysis
+    ##Labeling connected components
+    con_comps = sitk.ConnectedComponent(th_im_closed) #Connected components
+    cc_array = sitk.GetArrayFromImage(con_comps)
+
+    ##The largest connected component
+    unique, counts = np.unique(cc_array, return_counts=True)
+    largest_comp = unique[np.argmax(counts[1:]) + 1]
+
+    ##Creating a mask for the largest component
+    largest_comp_mask = (cc_array == largest_comp).astype(np.uint8)
+    largest_comp_im = sitk.GetImageFromArray(largest_comp_mask)
+
+    ##Creating the bounding box around the largest component
+    non_zero_coords = np.argwhere(largest_comp_mask > 0)
+
+    start = non_zero_coords.min(axis=0)
+    end = non_zero_coords.max(axis=0) + 1  # +1 to include the end slice
+
+    ##Cropping the original MR image using the bounding box coordinates
+    cropped_mr_arr = mr_array[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+    cropped_mr_im = sitk.GetImageFromArray(cropped_mr_arr)
+
+    ##Matching the original image
+    cropped_mr_im.SetOrigin(mr_image.GetOrigin())
+    cropped_mr_im.SetSpacing(mr_image.GetSpacing())
+    cropped_mr_im.SetDirection(mr_image.GetDirection())
+    
+    return cropped_mr_im

@@ -101,3 +101,67 @@ for masks in sorted_mr_maskfiles:
     # An alternative way to extract information about number of slices and pixel size
     image_size2 = mr_mask_metainf.shape
     size_list2.append(image_size2) # (Z, Y, X), i.e. (# of slices, height, width)
+    
+    
+    
+# Cropping out the non-spine voxels
+#Method 3
+class CropNonspinalVoxels:
+    
+    def __init__(self, mr_image_inp, mr_array_inp):
+        self.mr_image = mr_image_inp
+        self.mr_array = mr_array_inp
+    
+    def crop_nonspinal(self):
+        
+        '''
+        Crops out non-spinal voxels using thresholding, morphological operations and connected component analysis    
+
+        Parameters
+        ----------
+        mr_image_inp : Raw MR image
+        mr_array_inp : Array extracted from raw MR image
+
+        Returns
+        -------
+        MR image with non-spinal voxels cropped out
+        '''
+        
+        #Thresholding
+        th_im = sitk.BinaryThreshold(self.mr_image, lowerThreshold=175, upperThreshold=255, insideValue=1, outsideValue=0) #Thresholded image
+
+        #Morphological Operation
+        radius_morph = [1, 1, 1]
+        ##Closing (Gives the best results)
+        th_im_closed = sitk.BinaryMorphologicalClosing(th_im, radius_morph) #Image that went through closing operation
+    
+        #Connected Component Analysis
+        ##Labeling connected components
+        con_comps = sitk.ConnectedComponent(th_im_closed) #Connected components
+        cc_array = sitk.GetArrayFromImage(con_comps)
+
+        ##The largest connected component
+        unique, counts = np.unique(cc_array, return_counts=True)
+        largest_comp = unique[np.argmax(counts[1:]) + 1]
+
+        ##Creating a mask for the largest component
+        largest_comp_mask = (cc_array == largest_comp).astype(np.uint8)
+        largest_comp_im = sitk.GetImageFromArray(largest_comp_mask)
+
+        ##Creating the bounding box around the largest component
+        non_zero_coords = np.argwhere(largest_comp_mask > 0)
+    
+        start = non_zero_coords.min(axis=0)
+        end = non_zero_coords.max(axis=0) + 1  # +1 to include the end slice
+
+        ##Cropping the original MR image using the bounding box coordinates
+        cropped_mr_arr = self.mr_array[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        cropped_mr_im = sitk.GetImageFromArray(cropped_mr_arr)
+
+        ##Matching the original image
+        cropped_mr_im.SetOrigin(self.mr_image_inp.GetOrigin())
+        cropped_mr_im.SetSpacing(self.mr_image_inp.GetSpacing())
+        cropped_mr_im.SetDirection(self.mr_image_inp.GetDirection())
+    
+        return cropped_mr_im
+    

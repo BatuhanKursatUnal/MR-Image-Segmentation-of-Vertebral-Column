@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue May 14 16:28:15 2024
-
-@author: batuhanmac
-"""
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -113,47 +105,63 @@ for masks in sorted_mr_maskfiles:
     
     
 # Cropping out the non-spine voxels
-mr_image_path1 = '/Volumes/WD Elements/Pattern Recognition/Project/images/1_t1.mha'
-mr_mask_path1 = '/Volumes/WD Elements/Pattern Recognition/Project/masks/1_t1.mha'
-
-mr_image1 = sitk.ReadImage(mr_image_path1)
-mask_image1 = sitk.ReadImage(mr_mask_path1)
-
-mr_arr1 = sitk.GetArrayFromImage(mr_image1)
-mask_arr1 = sitk.GetArrayFromImage(mask_image1)
-
+#Method 3
+class CropNonspinalVoxels:
     
-#Method 1
-non_zero_coords = np.argwhere(mask_arr1)
-start = non_zero_coords.min(axis=0)
-end = non_zero_coords.max(axis=0) + 1  # +1 to include the end slice
+    def __init__(self, mr_image_inp, mr_array_inp):
+        self.mr_image = mr_image_inp
+        self.mr_array = mr_array_inp
+    
+    def crop_nonspinal(self):
+        
+        '''
+        Crops out non-spinal voxels using thresholding, morphological operations and connected component analysis    
 
-cropped_mr_image = sitk.GetArrayFromImage(mr_image1)[start[0]:end[0], start[1]:end[1], :]
+        Parameters
+        ----------
+        mr_image_inp : Raw MR image
+        mr_array_inp : Array extracted from raw MR image
 
-# Converting the cropped image to a SimpleITK image
-cropped_mr_image_sitk = sitk.GetImageFromArray(cropped_mr_image)
+        Returns
+        -------
+        MR image with non-spinal voxels cropped out
+        '''
+        
+        #Thresholding
+        th_im = sitk.BinaryThreshold(self.mr_image, lowerThreshold=175, upperThreshold=255, insideValue=1, outsideValue=0) #Thresholded image
 
-# Saving the cropped MR image
-output_path = '/Volumes/WD Elements/Pattern Recognition/Project/output/cropped_mr_image2.mha'  # Replace with the desired output path
-sitk.WriteImage(cropped_mr_image_sitk, output_path)
+        #Morphological Operation
+        radius_morph = [1, 1, 1]
+        ##Closing (Gives the best results)
+        th_im_closed = sitk.BinaryMorphologicalClosing(th_im, radius_morph) #Image that went through closing operation
+    
+        #Connected Component Analysis
+        ##Labeling connected components
+        con_comps = sitk.ConnectedComponent(th_im_closed) #Connected components
+        cc_array = sitk.GetArrayFromImage(con_comps)
 
+        ##The largest connected component
+        unique, counts = np.unique(cc_array, return_counts=True)
+        largest_comp = unique[np.argmax(counts[1:]) + 1]
 
-#Method 2
-cropped_imarr = np.zeros_like(mr_arr1)
-for s in range(mask_arr1.shape[2]):
-    for r in range(mask_arr1.shape[0]):
-        for c in range(mask_arr1.shape[1]):
-            if mask_arr1[r, c, s] > 0:
-                cropped_imarr[r, c, s] = mr_arr1[r, c, s]
+        ##Creating a mask for the largest component
+        largest_comp_mask = (cc_array == largest_comp).astype(np.uint8)
+        largest_comp_im = sitk.GetImageFromArray(largest_comp_mask)
 
-# Converting the cropped array back to a SimpleITK image
-cropped_imarr_sitk = sitk.GetImageFromArray(cropped_imarr)
+        ##Creating the bounding box around the largest component
+        non_zero_coords = np.argwhere(largest_comp_mask > 0)
+    
+        start = non_zero_coords.min(axis=0)
+        end = non_zero_coords.max(axis=0) + 1  # +1 to include the end slice
 
-# Setting the origin, spacing, and direction of the cropped image to match the original image
-cropped_imarr_sitk.SetOrigin(mr_image1.GetOrigin())
-cropped_imarr_sitk.SetSpacing(mr_image1.GetSpacing())
-cropped_imarr_sitk.SetDirection(mr_image1.GetDirection())
+        ##Cropping the original MR image using the bounding box coordinates
+        cropped_mr_arr = self.mr_array[start[0]:end[0], start[1]:end[1], start[2]:end[2]]
+        cropped_mr_im = sitk.GetImageFromArray(cropped_mr_arr)
 
-cropped_imarr_sitk = sitk.GetImageFromArray(cropped_imarr)
-output_path = '/Volumes/WD Elements/Pattern Recognition/Project/output/cropped_mr_image3.mha'  # Replace with the desired output path
-sitk.WriteImage(cropped_imarr_sitk, output_path)
+        ##Matching the original image
+        cropped_mr_im.SetOrigin(self.mr_image_inp.GetOrigin())
+        cropped_mr_im.SetSpacing(self.mr_image_inp.GetSpacing())
+        cropped_mr_im.SetDirection(self.mr_image_inp.GetDirection())
+    
+        return cropped_mr_im
+    

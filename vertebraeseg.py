@@ -109,7 +109,13 @@ for masks in sorted_mr_maskfiles:
 class CropNonspinalVoxels:
     
     def __init__(self, mr_image_inp, mr_array_inp):
-        self.mr_image = mr_image_inp
+        if not isinstance(mr_image_inp, sitk.Image):
+            raise TypeError("Input mr_image_inp should be a SimpleITK Image")
+        if not isinstance(mr_array_inp, np.ndarray):
+            raise TypeError("Input mr_array_inp should be a numpy array")
+            
+        #Casting
+        self.mr_image = sitk.Cast(sitk.RescaleIntensity(mr_image_inp), sitk.sitkUInt8)
         self.mr_array = mr_array_inp
     
     def crop_nonspinal(self):
@@ -139,6 +145,9 @@ class CropNonspinalVoxels:
         ##Labeling connected components
         con_comps = sitk.ConnectedComponent(th_im_closed) #Connected components
         cc_array = sitk.GetArrayFromImage(con_comps)
+        
+        if cc_array.max() == 0:
+            raise ValueError("No connected components found")
 
         ##The largest connected component
         unique, counts = np.unique(cc_array, return_counts=True)
@@ -159,9 +168,9 @@ class CropNonspinalVoxels:
         cropped_mr_im = sitk.GetImageFromArray(cropped_mr_arr)
 
         ##Matching the original image
-        cropped_mr_im.SetOrigin(self.mr_image_inp.GetOrigin())
-        cropped_mr_im.SetSpacing(self.mr_image_inp.GetSpacing())
-        cropped_mr_im.SetDirection(self.mr_image_inp.GetDirection())
+        cropped_mr_im.SetOrigin(self.mr_image.GetOrigin())
+        cropped_mr_im.SetSpacing(self.mr_image.GetSpacing())
+        cropped_mr_im.SetDirection(self.mr_image.GetDirection())
     
         return cropped_mr_im
     

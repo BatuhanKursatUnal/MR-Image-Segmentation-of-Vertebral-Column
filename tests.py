@@ -6,7 +6,7 @@ from unittest import TestCase
 import numpy as np
 import SimpleITK as sitk
 
-from simpleitk_tut import CropNonspinalVoxels
+from vertebraeseg import CropNonspinalVoxels
 dummy_zero_image = sitk.Image([10, 10, 10], sitk.sitkUInt8)
 dummy_valid_array = np.zeros((10, 10, 10), dtype= np.uint8)
 mr_image_path1 = '/pathtodataset/images/image.mha' #Remember to adjust it according to your local path
@@ -14,12 +14,11 @@ mr_image1 = sitk.ReadImage(mr_image_path1)
 mr_array1 = sitk.GetArrayFromImage(mr_image1)
 class TestInputValidation:
     '''
-    This class checks the validity of inputs on CropNonSpinalVoxels class
+    This testing scheme checks the validity of inputs on CropNonSpinalVoxels class
     '''
     def testwith_both_valid(self):
         '''
         Tests when both image and array are valid
-
         '''
         cropper = CropNonspinalVoxels(mr_image1, mr_array1)
         cropped_image_result = cropper.crop_nonspinal()

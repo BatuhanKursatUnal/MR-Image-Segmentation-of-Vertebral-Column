@@ -115,6 +115,61 @@ for masks in sorted_mr_maskfiles:
     size_list2.append(image_size2) # (Z, Y, X), i.e. (# of slices, height, width)
     
     
+# Pixel intensity normalization using min-max and z-score normalization methods
+class IntensityNormalizer:
+    '''
+    Intensity normalizer takes in image path, determined by the user, and applies min-max and z-score normalization methods.
+    '''
+    def __init__(self, mr_image_path):
+        if not isinstance(mr_image_path, str):
+            raise TypeError("Input is not a string")
+        self.mr_image_path = mr_image_path
+    
+    def minmax_normalizer(self):
+        '''
+        
+        Parameters
+        ----------
+        mr_image_path: Path of the MR image in your local machine
+        
+        Returns
+        -------
+        mr_image_normalized: Normalized image
+        mr_array_normalized: Normalized array
+
+        '''
+        
+        mr_image = sitk.ReadImage(self.mr_image_path)
+        mr_array = sitk.GetArrayFromImage(mr_image)
+        
+        mr_image_normalized = sitk.Cast(sitk.RescaleIntensity(mr_image), sitk.sitkUInt8)
+        mr_array_normalized = sitk.GetArrayFromImage(mr_image_normalized)
+        
+        return mr_image_normalized, mr_array_normalized
+    
+    def zscore_normalizer(self):
+        '''
+        Parameters
+        ----------
+        mr_image_path: Path of the MR image in your local machine
+
+        Returns
+        -------
+        mr_image_znormalized: Normalized image using z-score normalization
+        mr_array_znormalized: Normalized array using z-score normalization
+        '''
+        
+        mr_image = sitk.ReadImage(self.mr_image_path)
+        mr_array = sitk.GetArrayFromImage(mr_image)
+        
+        mr_mean_int = np.mean(mr_array)
+        mr_std_int = np.std(mr_array)
+        
+        mr_array_znormalized = (mr_array - mr_mean_int)/mr_std_int
+        mr_image_znormalized = sitk.GetImageFromArray(mr_array_znormalized)
+        
+        return mr_image_znormalized, mr_array_znormalized
+    
     
 # Cropping out the non-spine voxels
 #Method 3

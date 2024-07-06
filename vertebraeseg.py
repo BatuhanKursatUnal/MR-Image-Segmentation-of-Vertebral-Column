@@ -96,9 +96,9 @@ mr_maskfiles = []
 ## To get rid of the redundant data
 for mask in mr_masks:
     if mask[0].isnumeric():
-        mr_maskfiles += [mask]
+        mr_maskfiles.append(mask)
 
-sorted_mr_maskfiles = sorted(mr_maskfiles, key=extract_number)
+sorted_mr_maskfiles = sorted(mr_maskfiles, key=extract_number_and_modality)
 
 mr_mask_labels = []
 size_list2 = []

@@ -182,7 +182,7 @@ class CropNonspinalVoxels:
             raise TypeError("Input mr_array_inp should be a numpy array")
             
         #Casting
-        self.mr_image = sitk.Cast(sitk.RescaleIntensity(mr_image_inp), sitk.sitkUInt8)
+        self.mr_image = mr_image_inp
         self.mr_array = mr_array_inp
     
     def crop_nonspinal(self):
@@ -192,8 +192,8 @@ class CropNonspinalVoxels:
 
         Parameters
         ----------
-        mr_image_inp : Raw MR image
-        mr_array_inp : Array extracted from raw MR image
+        mr_image_inp : Normalized MR image
+        mr_array_inp : Array extracted from MR image
 
         Returns
         -------
@@ -201,7 +201,13 @@ class CropNonspinalVoxels:
         '''
         
         #Thresholding
-        th_im = sitk.BinaryThreshold(self.mr_image, lowerThreshold=175, upperThreshold=255, insideValue=1, outsideValue=0) #Thresholded image
+        #Otsu thresholding to indicate the optimum lower threshold value
+        otsu_filter = sitk.OtsuThresholdImageFilter()
+        otsu_filter.SetInsideValue(0)
+        otsu_filter.SetOutsideValue(1)
+        thresholding = otsu_filter.Execute(self.mr_image)
+        thresholding_val = otsu_filter.GetThreshold()
+        th_im = sitk.BinaryThreshold(self.mr_image, lowerThreshold=thresholding_val, upperThreshold=255, insideValue=1, outsideValue=0) #Thresholded image
 
         #Morphological Operation
         radius_morph = [1, 1, 1]

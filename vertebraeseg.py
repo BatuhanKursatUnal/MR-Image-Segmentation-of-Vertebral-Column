@@ -246,7 +246,42 @@ class CropNonspinalVoxels:
         cropped_mr_im.SetDirection(self.mr_image.GetDirection())
     
         return cropped_mr_im
+
+# Resizing function
+def resize_image(image_path, output_path, desired_size):
+    '''
+    This function resizes images to a specified size to achieve consistency
+
+    Parameters
+    ----------
+    image_path : Input image path, as a string
+    output_path : Output image path for reoriented image, as a string
+    desired_size: Specify the size in 3D, as a tuple
+
+    Returns
+    -------
+    None.
+
+    '''
+    mr_image = sitk.ReadImage(image_path)
+    input_size = mr_image.GetSize()
+    input_spacing = mr_image.GetSpacing()
+    input_direction = mr_image.GetDirection()
+    input_origin = mr_image.GetOrigin()
     
+    scaling_factor = [float(input_size[i]) / desired_size[i] for i in range(3)]
+    output_spacing = [input_spacing[i] * scaling_factor[i] for i in range(3)]
+    
+    resample = sitk.ResampleImageFilter()
+    resample.SetOutputSpacing(output_spacing)
+    resample.SetSize(desired_size)
+    resample.SetOutputDirection(input_direction)
+    resample.SetOutputOrigin(input_origin)
+    resample.SetInterpolator(sitk.sitkLinear)
+    
+    resized_image = resample.Execute(mr_image)
+    sitk.WriteImage(resized_image, output_path)
+
     
 # Preprocessing Pipeline    
 norm_type = input('Determine the type of normalizaion (minmax or zscore):')

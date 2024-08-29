@@ -235,11 +235,47 @@ for epoch in range(num_epochs):
     
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}")
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Accuracy: {accuracy_train:.4f}, Val Accuracy: {accuracy_val:.4f}")
-                
-plt.plot(train_loss, color='green')
+
+
+# Storing the losses
+loss_data = pd.DataFrame({
+'Epoch': list(range(1, num_epochs + 1)),
+'Training Loss': t_loss,
+'Validation Loss': v_loss
+})
+loss_data.to_csv('/Path/to/loss_data.csv', index=False)
+
+# Storing the accuracy scores
+acc_data = pd.DataFrame({
+'Epoch': list(range(1, num_epochs + 1)),
+'Training Accuracy': t_acc,
+'Validation Accuracy': v_acc
+})
+acc_data.to_csv('/Path/to/accuracy.csv', index=False)
+
+# Storing the F1 scores
+f1_data = pd.DataFrame({
+'Epoch': list(range(1, num_epochs + 1)),
+'Training F1 Score': t_f1,
+'Validation F1 Score': v_f1
+})
+f1_data.to_csv('/Path/to/f1.csv', index=False)
+
+
+# Training and validation loss vs. epoch plot
+plt.plot(t_loss, color='green')
 plt.plot(v_loss, color='blue')
-plt.title("Loss")
+plt.title("Loss Calculation")
 plt.xlabel('Epoch Number')
 plt.ylabel('Loss')
 plt.legend(['Training loss', 'Validation loss'])
+plt.show()
+
+# Training and validation accuracy vs. epoch plot
+plt.plot(t_acc, color='green')
+plt.plot(v_acc, color='blue')
+plt.title("Accuracy Calculation")
+plt.xlabel('Epoch Number')
+plt.ylabel('Accuracy')
+plt.legend(['Training accuracy', 'Validation accuracy'])
 plt.show()

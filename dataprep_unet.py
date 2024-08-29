@@ -20,7 +20,7 @@ def extract_number_and_modality(mri_file):
 
     Parameters
     ----------
-    mri_file : Files of the dataset stored in your local machine
+    mri_file : Files of the dataset stored in local machine
 
     Returns
     -------
@@ -34,6 +34,31 @@ def extract_number_and_modality(mri_file):
     # Assigning different priority to each modality to enforce the same order as in the folder
     modality_priority = {"t1": 1, "t2_SPACE": 2, "t2": 3}
     return subject_number, modality_priority[modality]
+
+
+def remap_labels(mask, num_classes):
+    '''
+    Remaps the labels
+
+    Parameters
+    ----------
+    mask : Mask array
+    num_classes : Number of classes in the current mask
+
+    Returns
+    -------
+    remapped_mask : Mask with a new, remapped labels
+
+    '''
+    unique_labels = torch.unique(mask)
+    label_map = {label.item(): idx for idx, label in enumerate(unique_labels)}
+
+    # Apply remapping
+    remapped_mask = mask.clone()
+    for old_label, new_label in label_map.items():
+        remapped_mask[mask == old_label] = new_label
+
+    return remapped_mask
 
 # Sort based on the numeric part and then the modality
 sorted_mr_imagefiles = sorted(mr_imagefiles, key=extract_number_and_modality)

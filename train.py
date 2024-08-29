@@ -127,34 +127,65 @@ model = model.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 
-v_loss = []
-train_loss = []
+
+# Training step
+#Loss initialization
+t_loss = [] #Initializing an empty list to store all training losses for each epoch
+v_loss = [] #Initializing an empty list to store all validation losses for each epoch
 val_loss_min = float('inf')
+
+#Accuracy initialization
+t_acc = []
+v_acc = []
+
+#F1 score initialization
+t_f1 = []
+v_f1 = [] 
 for epoch in range(num_epochs):
     model.train()
-    iter_count1 = 0
+    batch_count_train = 0
     epoch_loss_train = 0
+    epoch_accuracy_train = 0
+    epoch_f1_train = 0
     for image_arr, mask_arr in train_loader:
+        batch_count_train += 1
+        
+        image_arr, mask_arr = image_arr.to(device), mask_arr.to(device)
+        image_arr = image_arr.unsqueeze(1)  #Adds a channel dimension at index 1
+        mask_arr = remap_labels(mask_arr, num_classes=20)
         
         train_images = image_arr.to(device, dtype=torch.float32)
-        train_masks = mask_arr.to(device, dtype=torch.float32)
+        train_masks = mask_arr.to(device, dtype=torch.long)
         
         optimizer.zero_grad()
             
         #Feedforward
         outputs = model(train_images.float())
+        t_preds = torch.argmax(outputs, dim=1)
+        t_preds = t_preds.cpu().detach().numpy().flatten()
+        t_masks = train_masks.cpu().detach().numpy().flatten()
         loss = criterion(outputs, train_masks)
         
         #Feedback and optimization
         loss.backward()
         optimizer.step()
         
-        epoch_loss_train += loss.item()/len(train_loader)
+        #Performance metrics
+        #Loss
+        epoch_loss_train += loss.item()
+        #Accuracy
+        epoch_accuracy_train += accuracy_score(t_masks, t_preds)
+        #F1 score
+        epoch_f1_train += f1_score(t_masks, t_preds, average = 'macro')
         
-        iter_count1 += 1
-        print(f"Number of iterations done in training set are: {iter_count1}")
-        
-    train_loss.append(epoch_loss_train)
+    epoch_loss_train /= batch_count_train
+    epoch_accuracy_train /= batch_count_train
+    epoch_f1_train /= batch_count_train
+
+    print("\nTraining complete for this epoch.")
+    t_loss.append(epoch_loss_train)
+    t_acc.append(epoch_accuracy_train)
+    t_f1.append(epoch_f1_train)
 
 
     # Validation step

@@ -22,7 +22,7 @@ class UNet(nn.Module):
     
         #Encoding layers
         self.layer1 = nn.Sequential(
-            conv_relu(16, 32)
+            conv_relu(1, 32)
             )
     
         self.layer2 = nn.Sequential(
@@ -45,6 +45,11 @@ class UNet(nn.Module):
             conv_relu(256, 512)
             )
         
+        #Adjusting number of channels for skip connections through 3D, 1x1 convolutional matrix
+        self.adjust1 = nn.Conv3d(256, 512, kernel_size=1)
+        self.adjust2 = nn.Conv3d(128, 256, kernel_size=1)
+        self.adjust3 = nn.Conv3d(64, 128, kernel_size=1)
+        self.adjust4 = nn.Conv3d(32, 64, kernel_size=1)
     
         #Upper convolutional part of the decoding part (2x2 convolutional matrix)
         self.upconv1 = nn.ConvTranspose3d(512, 512, kernel_size=2, stride=2)
@@ -54,12 +59,12 @@ class UNet(nn.Module):
         
         
         #Decoder
-        self.decode_conv1 = conv_relu(512, 256)
-        self.decode_conv2 = conv_relu(256, 128)
-        self.decode_conv3 = conv_relu(128, 64)
-        self.decode_conv4 = conv_relu(64, 32)
+        self.decode_conv1 = conv_relu(1024, 256)
+        self.decode_conv2 = conv_relu(512, 128)
+        self.decode_conv3 = conv_relu(256, 64)
+        self.decode_conv4 = conv_relu(128, 32)
         
-        self.upconvfinal = nn.Conv3d(32, 16, kernel_size=1) #1x1 convolutional matrix
+        self.upconvfinal = nn.Conv3d(32, 20, kernel_size=1) #1x1 convolutional matrix
         
     
     #Forward propagation
@@ -72,22 +77,22 @@ class UNet(nn.Module):
         
         #Decoder
         decode1 = self.upconv1(bottleneck)
-        encode4 = F.interpolate(encode4, size=decode1.shape[:2], mode='nearest')
+        encode4 = self.adjust1(encode4)
         decode1 = torch.cat((decode1, encode4), dim=1) #Skip connection
         decode1 = self.decode_conv1(decode1)
         
         decode2 = self.upconv2(decode1)
-        encode3 = F.interpolate(encode3, size=decode2.shape[2:], mode='nearest')
+        encode3 = self.adjust2(encode3)
         decode2 = torch.cat((decode2, encode3), dim=1) #Skip connection
         decode2 = self.decode_conv2(decode2)
         
         decode3 = self.upconv3(decode2)
-        encode2 = F.interpolate(encode2, size=decode3.shape[2:], mode='nearest')
+        encode2 = self.adjust3(encode2)
         decode3 = torch.cat((decode3, encode2), dim=1) #Skip connection
         decode3 = self.decode_conv3(decode3)
         
         decode4 = self.upconv4(decode3)
-        encode1 = F.interpolate(encode1, size=decode4.shape[2:], mode='nearest')
+        encode1 = self.adjust4(encode1)
         decode4 = torch.cat((decode4, encode1), dim=1) #Skip connection
         decode4 = self.decode_conv4(decode4)
         

@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader, Dataset
 import SimpleITK as sitk
 import os
 import matplotlib.pyplot as plt
+from sklearn.metrics import f1_score, accuracy_score
 
 torch.cuda.empty_cache()
 

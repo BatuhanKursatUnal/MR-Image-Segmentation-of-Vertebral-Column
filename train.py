@@ -49,9 +49,9 @@ def get_dataset(mrfiles_in, mr_volume_dir, mr_masks_dir):
 
     Returns
     -------
-    train_dataset : Images in train set
-    val_dataset : Images in validation set
-    test_dataset : Images in test set
+    train_dataset : Image arrays in train set
+    val_dataset : Image arrays in validation set
+    test_dataset : Image arrays in test set
 
     '''
     images_list = []
@@ -64,9 +64,9 @@ def get_dataset(mrfiles_in, mr_volume_dir, mr_masks_dir):
         
     spiderset = SpiderDataset(masks_list, images_list)
     
-    train_size = int(len(spiderset) * 0.7) - (int(len(spiderset) * 0.7) % 8)
-    val_size = int(len(spiderset) * 0.15) - (int(len(spiderset) * 0.15) % 8)
-    test_size = ((len(spiderset) - train_size) - int(len(spiderset) * 0.15)) - ((len(spiderset) - train_size) - (int(len(spiderset) * 0.15) % 8))
+    train_size = int(len(spiderset) * 0.7) - (int(len(spiderset) * 0.7) % 4)
+    val_size = int(len(spiderset) * 0.15) - (int(len(spiderset) * 0.15) % 4)
+    test_size = ((len(spiderset) - train_size) - int(len(spiderset) * 0.15)) - ((len(spiderset) - train_size) - (int(len(spiderset) * 0.15) % 4))
     test_size += len(spiderset) - (train_size + val_size + test_size)
 
     densities = [train_size, val_size, test_size]
@@ -81,10 +81,10 @@ def get_dataset(mrfiles_in, mr_volume_dir, mr_masks_dir):
     
 
 # Set the hyperparameters
-learning_rate = 0.0001
-num_epochs = 20
-batch_initial = 16
-batch_later = 16
+learning_rate = 0.001
+num_epochs = 16
+batch_initial = 4
+batch_later = 4
 
 train_dataset, val_dataset, test_dataset = get_dataset(sorted_mr_imagefiles_new, images_volume_dir, masks_dir)
 
@@ -92,24 +92,27 @@ train_loader = DataLoader(
     dataset= train_dataset, 
     batch_size= batch_initial, 
     shuffle= True, 
-    num_workers= 0,
-    pin_memory= False
+    num_workers= 4,
+    pin_memory= False,
+    drop_last = False
     )
 
 val_loader = DataLoader(
     dataset= val_dataset, 
     batch_size= batch_initial, 
     shuffle= False, 
-    num_workers= 0,
-    pin_memory= False
+    num_workers= 4,
+    pin_memory= False,
+    drop_last = False
     )
 
 test_loader = DataLoader(
     dataset= test_dataset, 
     batch_size= batch_later, 
     shuffle= False, 
-    num_workers= 0,
-    pin_memory= False
+    num_workers= 4,
+    pin_memory= False,
+    drop_last = False
     )
 
 

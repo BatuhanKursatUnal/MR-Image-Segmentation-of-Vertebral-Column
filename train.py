@@ -123,9 +123,9 @@ else:
     device = 'cpu'
 model = model.to(device)
         
-# Loss functions and plots
+# Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=5e-04)
+optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 
 v_loss = []
 train_loss = []

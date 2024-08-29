@@ -88,6 +88,9 @@ for files in sorted_mr_imagefiles:
                                 #(Z, Y, X), i.e. (# of slices, height, width) for images with SPACE sequence
     
 
+size_list_df = pd.DataFrame(size_list)
+size_list_df.to_csv("/Path/to/sizelist.csv")
+
 # Investigating segmentation masks
 mr_masks_dir = ("pathtodataset/masks") #Remember to adjust it according to your local path
 mr_masks = os.listdir(mr_masks_dir)
@@ -308,3 +311,29 @@ for files in sorted_mr_imagefiles:
     cropped_mr_image = cropper.crop_nonspinal()
     output_path = 'pathtooutput/' + 'cropped_' + files  #Replace with the desired output path
     sitk.WriteImage(cropped_mr_image, output_path)
+
+
+# Eliminate images with inconsistent axis sizes
+size_list_cr_df = pd.read_csv('/Path/to/sizelist.csv')
+size_list_cr_df_new = size_list_cr_df[(size_list_cr_df.iloc[:, 1] <= 40) | (size_list_cr_df.iloc[:, 1] == 120)]
+size_list_cr_df_new.reset_index(drop=True, inplace=True)
+
+sorted_mr_imagefiles_new = []
+for index in size_list_cr_df_new.iloc[:, 0]:
+    sorted_mr_imagefiles_new.append(sorted_mr_imagefiles[index])
+    
+    
+# Resize all images to a standard size
+mr_inputfolder_path = '/Path/to/output/cropped/allcropped_v3'
+for image in sorted_mr_imagefiles_new:
+    resizing_input_path = '/Path/to/output/cropped/allcropped_v3' + 'cropped_' + image
+    resizing_output_path = 'Path/to/resized_v6/' + 'rs_' + image
+    desired_order = (32, 128, 256)
+    resize_image(resizing_input_path, resizing_output_path, desired_order)
+
+# Resizing all the masks to a standard size
+for image in sorted_mr_imagefiles_new:
+    resizingmasks_input_path = '/pathtodataset/masks/' + image
+    resizingmasks_output_path = '/Path/to/resized_masks_v2/' + 'rs_mask_' + image
+    desired_order = (32, 128, 256)
+    resize_image(resizingmasks_input_path, resizingmasks_output_path, desired_order)

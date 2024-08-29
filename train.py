@@ -192,32 +192,49 @@ for epoch in range(num_epochs):
     model = model.eval()
     
     with torch.no_grad():
-        val_loss = 0
-        iter_count2 = 0
+        batch_count_val = 0
         epoch_loss_val = 0
+        epoch_accuracy_val = 0
+        epoch_f1_val = 0
         for image_arr, mask_arr in val_loader:
+            batch_count_val += 1
+            image_arr = image_arr.unsqueeze(1)  #Adds a channel dimension at index 1
+            mask_arr = remap_labels(mask_arr, num_classes=20)
+            
             val_images = image_arr.to(device, dtype=torch.float32)
-            val_masks = mask_arr.to(device, dtype=torch.float32)
+            val_masks = mask_arr.to(device, dtype=torch.long)
 
             #Feedforward
             val_outputs =  model(val_images.float())
+            v_preds = torch.argmax(val_outputs, dim=1)
+            v_preds = v_preds.cpu().detach().numpy().flatten()
+            v_masks = val_masks.cpu().detach().numpy().flatten()
             val_loss = criterion(val_outputs, val_masks)
             
-            #Feedback and optimization            
-            epoch_loss_val += val_loss.item()/len(val_loader)
-            
-            iter_count2 += 1
-            print(f"Number of iterations done in validation set are: {iter_count2}")
+            #Performance metrics
+            #Loss
+            epoch_loss_val += val_loss.item()
+            #Accuracy
+            epoch_accuracy_val += accuracy_score(v_masks, v_preds)
+            #F1 score
+            epoch_f1_val += f1_score(v_masks, v_preds, average = 'macro')
+        
+        epoch_loss_val /= batch_count_val
+        epoch_accuracy_val /= batch_count_val
+        epoch_f1_val /= batch_count_val
                 
     v_loss.append(epoch_loss_val)
+    v_acc.append(epoch_accuracy_val)
+    v_f1.append(epoch_f1_val)
     
     # Pick out the best model
     if epoch_loss_val < val_loss_min:
-        torch.save(model.state_dict(), 'bestmodel.pth')
+        torch.save(model.state_dict(), '/Path/to/bestmodel.pth')
         val_loss_min = epoch_loss_val
         print(f'Saving model at epoch {epoch+1} with validation loss {epoch_loss_val:.4f}')
     
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}")
+    print(f"Epoch [{epoch+1}/{num_epochs}], Train Accuracy: {accuracy_train:.4f}, Val Accuracy: {accuracy_val:.4f}")
                 
 plt.plot(train_loss, color='green')
 plt.plot(v_loss, color='blue')

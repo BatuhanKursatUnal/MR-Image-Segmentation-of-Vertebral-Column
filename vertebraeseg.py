@@ -5,47 +5,23 @@ import scipy
 import pandas
 import importlib
 import SimpleITK as sitk
-from ipywidgets import interact
 import re
-
-# Necessary packages that are used in this project are listed below. 
-#The following code, which is taken from simpleitk tutorials directly, checks that all packages are installed
-required_packages = {
-    "numpy",
-    "matplotlib",
-    "ipywidgets",
-    "scipy",
-    "pandas",
-    "numba",
-    "multiprocess",
-    "SimpleITK",
-}
-
-problem_packages = list()
-
-for package in required_packages:
-    try:
-        p = importlib.import_module(package)
-    except ImportError:
-        problem_packages.append(package)
-
-if len(problem_packages) == 0:
-    print("All is well.")
-else:
-    print(
-        "The following packages are required but not installed: "
-        + ", ".join(problem_packages)
-    )
+import configparser
 
 
-# Setting up the chosen image viewer, i.e. 3DSlicer
-#Default app is ImageJ, another commonly used one is Fiji
-image_viewer = sitk.ImageViewer()
-image_viewer.SetApplication("/pathtoimageviewerapp/Slicer") #Remember to adjust it according to your local path
+config = configparser.ConfigParser()
+config.read('configuration.txt') #It must be stored in the same folder as the script
 
+# Importing the paths from configuration.txt file
+mr_volume_dir = config['paths']['mr_volume_dir']
+mr_masks_dir = config['paths']['mr_masks_dir']
+size_list_path  = config['paths']['size_list_path']
+cropped_path = config['paths']['cropped_path']
+mr_inputfolder_path = config['paths']['mr_inputfolder_path']
+mr_outputfolder_path  = config['paths']['mr_outputfolder_path']
+masks_outputfolder_path = config['paths']['masks_outputfolder_path']
 
 # Retrieve the information about image volumes
-mr_volume_dir = ("/pathtodataset/images") #Remember to adjust it according to your local path
 mr_images = os.listdir(mr_volume_dir)
 size_list = []
 mr_imagefiles = []
@@ -89,10 +65,9 @@ for files in sorted_mr_imagefiles:
     
 
 size_list_df = pd.DataFrame(size_list)
-size_list_df.to_csv("/Path/to/sizelist.csv")
+size_list_df.to_csv(size_list_path)
 
 # Investigating segmentation masks
-mr_masks_dir = ("pathtodataset/masks") #Remember to adjust it according to your local path
 mr_masks = os.listdir(mr_masks_dir)
 mr_maskfiles = []
 
@@ -309,12 +284,12 @@ for files in sorted_mr_imagefiles:
     #Cropping out
     cropper = CropNonspinalVoxels(mr_image, mr_array)
     cropped_mr_image = cropper.crop_nonspinal()
-    output_path = 'pathtooutput/' + 'cropped_' + files  #Replace with the desired output path
+    output_path = cropped_path + 'cropped_' + files
     sitk.WriteImage(cropped_mr_image, output_path)
 
 
 # Eliminate images with inconsistent axis sizes
-size_list_cr_df = pd.read_csv('/Path/to/sizelist.csv')
+size_list_cr_df = pd.read_csv(size_list_path)
 size_list_cr_df_new = size_list_cr_df[(size_list_cr_df.iloc[:, 1] <= 40) | (size_list_cr_df.iloc[:, 1] == 120)]
 size_list_cr_df_new.reset_index(drop=True, inplace=True)
 
@@ -324,16 +299,16 @@ for index in size_list_cr_df_new.iloc[:, 0]:
     
     
 # Resize all images to a standard size
-mr_inputfolder_path = '/Path/to/output/cropped/allcropped_v3'
+
 for image in sorted_mr_imagefiles_new:
-    resizing_input_path = '/Path/to/output/cropped/allcropped_v3' + 'cropped_' + image
-    resizing_output_path = 'Path/to/resized_v6/' + 'rs_' + image
+    resizing_input_path = mr_inputfolder_path + 'cropped_' + image
+    resizing_output_path = mr_outputfolder_path + 'rs_' + image
     desired_order = (32, 128, 256)
     resize_image(resizing_input_path, resizing_output_path, desired_order)
 
 # Resizing all the masks to a standard size
 for image in sorted_mr_imagefiles_new:
-    resizingmasks_input_path = '/pathtodataset/masks/' + image
-    resizingmasks_output_path = '/Path/to/resized_masks_v2/' + 'rs_mask_' + image
+    resizingmasks_input_path = mr_masks_dir + image
+    resizingmasks_output_path = masks_outputfolder_path + 'rs_mask_' + image
     desired_order = (32, 128, 256)
     resize_image(resizingmasks_input_path, resizingmasks_output_path, desired_order)

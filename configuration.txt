@@ -1,0 +1,8 @@
+[paths]
+mr_volume_dir = /pathtodataset/images
+mr_masks_dir = /pathtodataset/masks
+size_list_path = /pathto/sizelist.csv
+cropped_path = pathto/cropped_outputfolder
+mr_inputfolder_path = /pathto/output/croppedfolder
+mr_outputfolder_path = /pathto/resizedfolder
+masks_outputfolder_path = /pathto/resized_masksfolder/

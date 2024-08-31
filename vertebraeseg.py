@@ -32,12 +32,13 @@ for file in mr_images:
         mr_imagefiles.append(file)
         
 def extract_number_and_modality(mri_file):
+    
     '''
     Key function to determine sorting dependencies
 
     Parameters
     ----------
-    mri_file : Files of the dataset stored in your local machine
+    mri_file : List of image files of the dataset
 
     Returns
     -------
@@ -95,26 +96,65 @@ for masks in sorted_mr_maskfiles:
     
 # Pixel intensity normalization using min-max and z-score normalization methods
 class IntensityNormalizer:
+    
     '''
-    Intensity normalizer takes in image path, determined by the user, and applies min-max and z-score normalization methods.
+    A class for pixel intensity normalization on MR images using min-max and/or
+    z-score normalization methods.
+
+    Attributes:
+    -----------
+    mr_image_path: str
+        The file path to the MR image that needs to be normalized.
+
+    Methods:
+    --------
+    minmax_normalizer(): 
+        Normalizes the image using min-max normalization.
+
+    zscore_normalizer(): 
+        Normalizes the image using z-score normalization.
+        
     '''
+    
     def __init__(self, mr_image_path):
+        
+        '''
+        Constructs the IntensityNormalizer with the specified image path.
+
+        Parameters
+        ----------
+        mr_image_path: str
+            The file path to the MR image that needs to be normalized.
+
+        Raises:
+        -------
+        TypeError: 
+            If the input `mr_image_path` is not a string.
+            
+        Returns
+        -------
+        None.
+        
+        '''
         if not isinstance(mr_image_path, str):
             raise TypeError("Input is not a string")
         self.mr_image_path = mr_image_path
     
     def minmax_normalizer(self):
+        
         '''
+        Applies min-max normalization to the inputted MR image.
         
-        Parameters
-        ----------
-        mr_image_path: Path of the MR image in your local machine
-        
+        Min-max normalization rescales the pixel intensity values to the 
+        range [0, 255] and converts the image to 8-bit.
+
         Returns
         -------
-        mr_image_normalized: Normalized image
-        mr_array_normalized: Normalized array
-
+        mr_image_normalized : SimpleITK.Image
+            The min-max normalized image.
+        mr_array_normalized : numpy.ndarray
+            The array of min-max normalized image
+            
         '''
         
         mr_image = sitk.ReadImage(self.mr_image_path)
@@ -126,15 +166,20 @@ class IntensityNormalizer:
         return mr_image_normalized, mr_array_normalized
     
     def zscore_normalizer(self):
+        
         '''
-        Parameters
-        ----------
-        mr_image_path: Path of the MR image in your local machine
+        Applies z-score normalization to the inputted MR image.
+        
+        Z-score normalization transforms the pixel intensity values so that they
+        have the mean 0, and standard deviation 1.
 
         Returns
         -------
-        mr_image_znormalized: Normalized image using z-score normalization
-        mr_array_znormalized: Normalized array using z-score normalization
+        mr_image_znormalized : SimpleITK.Image
+            The image normalized with z-score method
+        mr_array_znormalized : numpy.ndarray
+            The array of image normalized with z-score method
+            
         '''
         
         mr_image = sitk.ReadImage(self.mr_image_path)
@@ -150,10 +195,50 @@ class IntensityNormalizer:
     
     
 # Cropping out the non-spine voxels
-#Method 3
 class CropNonspinalVoxels:
     
+    '''
+    A class for cropping out non-spinal voxels from the input MR image.
+
+    Attributes:
+    -----------
+    mr_image_inp: SimpleITK.Image
+        The image input
+        
+    mr_array_inp: numpy.ndarray
+        The array of image input
+        
+    Methods:
+    --------
+    crop_nonspinal():
+        Crops out non-spinal voxels of the image
+        
+    '''
+    
     def __init__(self, mr_image_inp, mr_array_inp):
+        
+        '''
+        Constructs the CropNonspinalVoxels with specified paths to image and array.
+
+        Parameters
+        ----------
+        mr_image_inp: SimpleITK.Image
+            The image input
+            
+        mr_array_inp: numpy.ndarray
+            The array of image input
+
+        Raises
+        ------
+        TypeError:
+            If the 'mr_image_inp' is not of form SimpleITK.Image
+            If the 'mr_array_inp' is not of form numpy.ndarray
+
+        Returns
+        -------
+        None.
+
+        '''
         if not isinstance(mr_image_inp, sitk.Image):
             raise TypeError("Input mr_image_inp should be a SimpleITK Image")
         if not isinstance(mr_array_inp, np.ndarray):
@@ -170,12 +255,23 @@ class CropNonspinalVoxels:
 
         Parameters
         ----------
-        mr_image_inp : Normalized MR image
-        mr_array_inp : Array extracted from MR image
+        mr_image_inp: SimpleITK.Image
+            The image input
+            
+        mr_array_inp: numpy.ndarray
+            The array of image input
+            
+        Raises
+        ------
+        ValueError:
+            When the size of the array representing connected components is 0,
+            i.e. there is no connected components in the image
 
         Returns
         -------
-        MR image with non-spinal voxels cropped out
+        cropped_mr_im: SimpleITK.Image
+            Resulting MR image with non-spinal voxels cropped out
+        
         '''
         
         #Thresholding
@@ -227,14 +323,20 @@ class CropNonspinalVoxels:
 
 # Resizing function
 def resize_image(image_path, output_path, desired_size):
+    
     '''
-    This function resizes images to a specified size to achieve consistency
+    Resizes images to a specified size to achieve consistency
 
     Parameters
     ----------
-    image_path : Input image path, as a string
-    output_path : Output image path for reoriented image, as a string
-    desired_size: Specify the size in 3D, as a tuple
+    image_path : str
+        Input image path
+        
+    output_path : str
+        Output image path for resized image
+        
+    desired_size: tuple
+        Specify the size in 3D
 
     Returns
     -------

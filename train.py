@@ -1,5 +1,4 @@
 # U-Net Dataset Initialization, Training and Validation Set Iterations
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,20 +8,113 @@ import os
 import matplotlib.pyplot as plt
 from sklearn.metrics import f1_score, accuracy_score
 
+# Use GPU if available
+model = UNet()
 torch.cuda.empty_cache()
+if torch.cuda.is_available():
+    device = 'cuda'
+else:
+    device = 'cpu'
+model = model.to(device)
 
 # Training the 3D U-Net
 class SpiderDataset(Dataset):
+    
+    '''
+    Spider dataset class to load 3D images and corresponding masks.
+    
+    Attributes:
+    -----------
+    mask_path: list of str
+        The list of paths to the corresponding masks of the input images.
+    
+    image_path: list of str
+        The list of paths to the input images.
+        
+    transform : callable, optional
+        A transformation to apply to the input image data, if data augmentation
+        is needed.
+
+    target_transform : callable, optional
+        A transformation to apply to the input mask data, if data augmentation
+        is needed.
+        
+    Methods:
+    --------
+    __len__():
+        Returns the total number of samples in the dataset.
+        
+    __getitem__(idx):
+        Fetches the image and mask with the corresponding index, creates the
+        numpy arrays out of them and applies transformations (if defined).
+        
+    '''
+    
     def __init__(self, mask_path, image_path, transform=None, target_transform=None):
+        
+        '''
+        Initializes the SpiderDataset using paths to the masks and images.
+
+        Parameters
+        ----------
+        mask_path: list of str
+            The list of paths to the corresponding masks of the input images.
+        
+        image_path: list of str
+            The list of paths to the input images.
+            
+        transform : callable, optional
+            A transformation to apply to the input image data, if data augmentation
+            is needed.
+
+        target_transform : callable, optional
+            A transformation to apply to the input mask data, if data augmentation
+            is needed.
+
+        Returns
+        -------
+        None.
+
+        '''
         self.mask_path = mask_path
         self.image_path = image_path
         self.transform = transform
         self.target_transform = target_transform
         
     def __len__(self):
+        
+        '''
+        Calculates the total number of samples in the dataset.
+
+        Returns
+        -------
+        int
+            Total number of samples
+
+        '''
        return len(self.image_path)
         
     def __getitem__(self, idx):
+        
+        '''
+        Fetches the image and mask with the corresponding index, creates the
+        numpy arrays out of them and applies transformations (if defined).
+
+        Parameters
+        ----------
+        idx : int
+            Index at the current iteration which defines the image and mask pair
+            that will be fetched.
+
+        Returns
+        -------
+        image_arr : numpy.ndarray
+            The image as a numpy array.
+
+        mask_arr : numpy.ndarray
+            The mask as a numpy array.
+
+        '''
         mask_path = self.mask_path[idx]
         image_path = self.image_path[idx]
         mask = sitk.ReadImage(mask_path)        
@@ -39,20 +131,32 @@ class SpiderDataset(Dataset):
     
     
 def get_dataset(mrfiles_in, mr_volume_dir, mr_masks_dir):
+    
     '''
-    This function is used to get the data from SpiderDataset class and split it into train, validation and test sets
+    This function is used to get the data from SpiderDataset class and splits it
+    into train, validation and test sets with determined densities for each set.
 
     Parameters
     ----------
-    mrfiles_in : MR image file names that are sorted in pre-processing steps (string)
-    mr_volume_dir : Path to the folder containing images (string)
-    mr_masks_dir : Path to the folder containing masks (string)
+    mrfiles_in : list of str
+        List of names of MR image files that are sorted in pre-processing steps
+        
+    mr_volume_dir : str
+        Path to the folder containing images
+        
+    mr_masks_dir : str
+        Path to the folder containing masks
 
     Returns
     -------
-    train_dataset : Image arrays in train set
-    val_dataset : Image arrays in validation set
-    test_dataset : Image arrays in test set
+    train_dataset : torch.utils.data.Subset
+        Subset of image-mask pairs assigned to training subset.
+        
+    val_dataset : torch.utils.data.Subset
+        Subset of image-mask pairs assigned to validation subset.
+        
+    test_dataset : torch.utils.data.Subset
+        Subset of image-mask pairs assigned to test subset.
 
     '''
     images_list = []
@@ -115,14 +219,6 @@ test_loader = DataLoader(
     pin_memory= False,
     drop_last = False
     )
-
-
-model = UNet()
-if torch.cuda.is_available():
-    device = 'cuda'
-else:
-    device = 'cpu'
-model = model.to(device)
         
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()

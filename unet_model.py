@@ -1,16 +1,76 @@
 # Defining the U-Net class
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 class UNet(nn.Module):
     
+    '''
+    U-Net model for 3D image segmentation.
+
+    This implementation is based on the 3D U-Net architecture, which consists of an 
+    encoder-decoder structure together with skip connections. It is designed to
+    handle 3D medical images.
+
+    Attributes:
+    -----------
+    layer1, layer2, layer3, layer4, layer5: nn.Sequential
+        The encoding layers of the network that extract features from the input image.
+    
+    adjust1, adjust2, adjust3, adjust4: nn.Conv3d
+        3D convolutional layers used for adjusting the number of channels so 
+        that the dimensions match in skip connections.
+    
+    upconv1, upconv2, upconv3, upconv4: nn.ConvTranspose3d
+        Transpose convolutional layers used for up-sampling in the decoding process.
+    
+    decode_conv1, decode_conv2, decode_conv3, decode_conv4: nn.Sequential
+        Convolutional layers for decoding.
+    
+    upconvfinal: nn.Conv3d
+        A final 1x1 convolutional layer to output the final segmentation map.
+        
+    Methods:
+    --------
+    forward(x):
+        Defines the forward pass of the U-Net model, including encoding, and decoding
+        with skip connections.
+        
+    '''
+    
     def __init__(self):
+        
+        '''
+        Constracts the UNet model.
+
+        Returns
+        -------
+        None.
+
+        '''
         super().__init__()
         
-        #Convolutional part of the encoding part (3x3 convolutional matrix)
+        #Convolutional part of the encoder (3x3 convolutional matrix)
         def conv_relu(input_chans, output_chans):
+            
+            '''
+            Convolutional part of the econding section.
+
+            Parameters
+            ----------
+            input_chans : int
+                Input channel dimension
+                
+            output_chans : int
+                Output channel dimension
+
+            Returns
+            -------
+            nn.Sequential
+                Sequential applications of 3D convolutional layer followed by a
+                3D batch normalization and a ReLU activation function, performed
+                twice according to the original architecture of U-Net model.
+
+            '''
             return nn.Sequential(
                 nn.Conv3d(input_chans, output_chans, kernel_size=3, padding=1),
                 nn.BatchNorm3d(output_chans),
@@ -69,6 +129,23 @@ class UNet(nn.Module):
     
     #Forward propagation
     def forward(self, x):
+        
+        '''
+        Defines the forward pass of the U-Net model.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            A 5D tensor of shape (batch_size, num_channels, depth, height, width)
+            representing the input volume.
+
+        Returns
+        -------
+        final_out : torch.Tensor
+            The output of the network, a tensor of shape
+            (batch_size, num_classes, depth, height, width).
+
+        '''
         encode1 = self.layer1(x)
         encode2 = self.layer2(encode1)
         encode3 = self.layer3(encode2)

@@ -10,6 +10,7 @@ loss_out_path = /pathto/loss_data.csv
 acc_out_path = /pathto/accuracy.csv
 f1_out_path = /pathto/f1.csv
 best_model_path = /pathto/bestmodel.pth
+mr_pathto_image = /pathto/images/image.mha
 
 
 [settings]

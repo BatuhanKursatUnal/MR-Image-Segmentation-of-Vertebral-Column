@@ -1,14 +1,23 @@
 def visualize_results(images, masks, preds, slice_idx=None):
+    
     """
-    Visualize input images, ground truth masks, and predicted masks.
+    Visualize input images, ground truth masks, and predicted masks to enable 
+    comparisons between them.
 
     Parameters
     ----------
-    images: Batch of input images.
-    masks: Batch of ground truth masks.
-    preds: Batch of predicted masks.
-    slice_idx: The slice index to visualize from the 3D volume.
-               If None, the middle slice is chosen.
+    images: SimpleITK.Image
+        Batch of input images.
+        
+    masks: SimpleITK.Image
+        Batch of ground truth masks.
+        
+    preds: SimpleITK.Image
+        Batch of predicted masks.
+        
+    slice_idx: int
+        The slice index to visualize from the 3D volume. 
+        If None, the middle slice is chosen.
     """
     num_images = len(images)
 
@@ -46,7 +55,7 @@ def visualize_results(images, masks, preds, slice_idx=None):
 #Loading the best model chosen in validation set
 model = UNet()
 model = model.to(device)
-best_model = torch.load('/Path/to/bestmodel5.pth')
+best_model = torch.load(best_model_path)
 model.load_state_dict(best_model)
 
 t2_loss = []

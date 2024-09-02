@@ -9,3 +9,8 @@ masks_outputfolder_path = /pathto/resized_masksfolder/
 loss_out_path = /pathto/loss_data.csv
 acc_out_path = /pathto/accuracy.csv
 f1_out_path = /pathto/f1.csv
+best_model_path = /pathto/bestmodel.pth
+
+
+[settings]
+desired_order = (32, 128, 256)

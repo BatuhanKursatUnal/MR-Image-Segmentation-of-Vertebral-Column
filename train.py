@@ -183,6 +183,35 @@ def get_dataset(mrfiles_in, mr_volume_dir, mr_masks_dir):
     test_dataset = dataset[2]
     
     return train_dataset, val_dataset, test_dataset
+
+def remap_labels(mask, num_classes):
+    
+    '''
+    Remaps the labels in the masks between 0 and 20 (at most).
+
+    Parameters
+    ----------
+    mask : numpy.array
+        Mask array.
+        
+    num_classes : int
+        Number of classes in the current mask.
+
+    Returns
+    -------
+    remapped_mask : numpy.array
+        Mask array with a new, remapped labels.
+
+    '''
+    unique_labels = torch.unique(mask)
+    label_map = {label.item(): idx for idx, label in enumerate(unique_labels)}
+
+    # Apply remapping
+    remapped_mask = mask.clone()
+    for old_label, new_label in label_map.items():
+        remapped_mask[mask == old_label] = new_label
+
+    return remapped_mask
     
 
 # Set the hyperparameters

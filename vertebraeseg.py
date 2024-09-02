@@ -1,35 +1,9 @@
+# Pre-processing functions and classes
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy
-import pandas
-import importlib
+import pandas as pd
 import SimpleITK as sitk
 import re
-import configparser
-
-
-config = configparser.ConfigParser()
-config.read('configuration.txt') #It must be stored in the same folder as the script
-
-# Importing the paths from configuration.txt file
-mr_volume_dir = config['paths']['mr_volume_dir']
-mr_masks_dir = config['paths']['mr_masks_dir']
-size_list_path  = config['paths']['size_list_path']
-cropped_path = config['paths']['cropped_path']
-mr_inputfolder_path = config['paths']['mr_inputfolder_path']
-mr_outputfolder_path  = config['paths']['mr_outputfolder_path']
-masks_outputfolder_path = config['paths']['masks_outputfolder_path']
-
-# Retrieve the information about image volumes
-mr_images = os.listdir(mr_volume_dir)
-size_list = []
-mr_imagefiles = []
-
-## To get rid of the redundant data
-for file in mr_images:
-    if file[0].isnumeric():
-        mr_imagefiles.append(file)
         
 def extract_number_and_modality(mri_file):
     
@@ -53,46 +27,65 @@ def extract_number_and_modality(mri_file):
     modality_priority = {"t1": 1, "t2_SPACE": 2, "t2": 3}
     return subject_number, modality_priority[modality]
 
-sorted_mr_imagefiles = sorted(mr_imagefiles, key=extract_number_and_modality)
-    
-for files in sorted_mr_imagefiles:    
-    mr_images_path = os.path.join(mr_volume_dir, files)
-    mr_image_meta = sitk.ReadImage(mr_images_path)
-    
-    image_size = mr_image_meta.GetSize()
-    size_list += [image_size] #Image size information of each MR image in the dataset
-                                #(X, Y, Z), i.e. (width, height, # of slices) for T1 and T2 images
-                                #(Z, Y, X), i.e. (# of slices, height, width) for images with SPACE sequence
-    
 
-size_list_df = pd.DataFrame(size_list)
-size_list_df.to_csv(size_list_path)
-
-# Investigating segmentation masks
-mr_masks = os.listdir(mr_masks_dir)
-mr_maskfiles = []
-
-## To get rid of the redundant data
-for mask in mr_masks:
-    if mask[0].isnumeric():
-        mr_maskfiles.append(mask)
-
-sorted_mr_maskfiles = sorted(mr_maskfiles, key=extract_number_and_modality)
-
-mr_mask_labels = []
-size_list2 = []
-for masks in sorted_mr_maskfiles:
-    mr_masks_path = os.path.join(mr_masks_dir, masks)
-    mr_mask_meta = sitk.ReadImage(mr_masks_path)
-    mr_mask_metainf = sitk.GetArrayFromImage(mr_mask_meta)
+def extract_image_size(image_list):
     
-    mr_mask_label = np.unique(mr_mask_metainf) # Unique values in this array corresponds to segmentation labels
-    mr_mask_labels.append(mr_mask_label)
+    '''
+    Extracts the sizes of images in a specified path, lists them, and creates a
+    dataframe containing all the sizes.
+
+    Parameters
+    ----------
+    image_list: list of str
+        List of image names represented as strings.
+
+    Returns
+    -------
+    size_list_df: pandas.DataFrame
+        List of dimensions (sizes) of images stored in a dataframe.
+
+    '''
+    for files in image_list:    
+        mr_images_path = os.path.join(mr_volume_dir, files)
+        mr_image_meta = sitk.ReadImage(mr_images_path)
+        
+        image_size = mr_image_meta.GetSize()
+        size_list += [image_size] #Image size information of each MR image in the dataset
+        size_list_df = pd.DataFrame(size_list)
+        size_list_df.to_csv(size_list_path)
+        
+    return size_list_df
+
+
+def extract_mask_labels(mask_list):
     
-    # An alternative way to extract information about number of slices and pixel size
-    image_size2 = mr_mask_metainf.shape
-    size_list2.append(image_size2) # (Z, Y, X), i.e. (# of slices, height, width)
-    
+    '''
+    Extracts the unique values in the metadata of each mask which correspond to
+    the labels contained in them.
+
+    Parameters
+    ----------
+    mask_list: list of str
+        List of mask names represented as strings.
+
+    Returns
+    -------
+    mr_mask_labels: list
+        List containing all the labels for each mask.
+
+    '''
+    mr_mask_labels = []
+    size_list2 = []
+    for masks in sorted_mr_maskfiles:
+        mr_masks_path = os.path.join(mr_masks_dir, masks)
+        mr_mask_meta = sitk.ReadImage(mr_masks_path)
+        mr_mask_metainf = sitk.GetArrayFromImage(mr_mask_meta)
+        
+        mr_mask_label = np.unique(mr_mask_metainf) # Unique values in this array corresponds to segmentation labels
+        mr_mask_labels.append(mr_mask_label)
+        
+    return mr_mask_labels
+
     
 # Pixel intensity normalization using min-max and z-score normalization methods
 class IntensityNormalizer:
@@ -363,54 +356,88 @@ def resize_image(image_path, output_path, desired_size):
     sitk.WriteImage(resized_image, output_path)
 
     
-# Preprocessing Pipeline    
-norm_type = input('Determine the type of normalizaion (minmax or zscore):')
-for files in sorted_mr_imagefiles:
-    mr_images_path = os.path.join(mr_volume_dir, files)
-    #Z-score Normalization
-    if __name__ == "__main__" and norm_type == 'zscore':
-        mr_image_path1 = mr_images_path
-        normalizer = IntensityNormalizer(mr_image_path1)
-        znormalized_image, znormalized_array = normalizer.zscore_normalizer() #Z-score normalization
-        mr_image = znormalized_image
-        mr_array = znormalized_array
+# Preprocessing Pipeline
+def preprocess_mr_images(image_list, mr_volume_dir, cropped_path, size_list_path, 
+                         mr_inputfolder_path, mr_outputfolder_path, mr_masks_dir, 
+                         masks_outputfolder_path, desired_order):
+    
+    """
+    Processes MR images and masks by normalizing, cropping, and resizing them.
+
+    Parameters
+    ----------
+    image_list: list of str
+        List of sorted MR image filenames.
         
-    #Min-max normalization
-    if __name__ == "__main__" and norm_type == 'minmax':
-        mr_image_path1 = mr_images_path
-        normalizer = IntensityNormalizer(mr_image_path1)
-        normalized_image, normalized_array = normalizer.minmax_normalizer() #Min-max normalization
-        mr_image = normalized_image
-        mr_array = normalized_array    
+    mr_volume_dir: str
+        Directory containing MR image volumes.
+        
+    cropped_path: str
+        Output path to save cropped images.
+        
+    size_list_path: str
+        Path to the CSV file with size information.
+        
+    mr_inputfolder_path: str
+        Input folder path for resizing images.
+        
+    mr_outputfolder_path: str
+        Output folder path for resized images.
+        
+    mr_masks_dir: str
+        Directory containing MR masks.
+        
+    masks_outputfolder_path: str
+        Output folder path for resized masks.
+        
+    desired_order: tuple
+        Desired dimensions of the image that will be specified in resizing function.
+    """
+    norm_type = input('Determine the type of normalizaion (minmax or zscore):')
+    for files in image_list:
+        mr_images_path = os.path.join(mr_volume_dir, files)
+        #Z-score Normalization
+        if __name__ == "__main__" and norm_type == 'zscore':
+            mr_image_path1 = mr_images_path
+            normalizer = IntensityNormalizer(mr_image_path1)
+            znormalized_image, znormalized_array = normalizer.zscore_normalizer() #Z-score normalization
+            mr_image = znormalized_image
+            mr_array = znormalized_array
+            
+        #Min-max normalization
+        if __name__ == "__main__" and norm_type == 'minmax':
+            mr_image_path1 = mr_images_path
+            normalizer = IntensityNormalizer(mr_image_path1)
+            normalized_image, normalized_array = normalizer.minmax_normalizer() #Min-max normalization
+            mr_image = normalized_image
+            mr_array = normalized_array    
+        
+        #Cropping out
+        cropper = CropNonspinalVoxels(mr_image, mr_array)
+        cropped_mr_image = cropper.crop_nonspinal()
+        output_path = cropped_path + 'cropped_' + files
+        sitk.WriteImage(cropped_mr_image, output_path)
+
+    # Eliminate images with inconsistent axis sizes
+    size_list_cr_df = pd.read_csv(size_list_path)
+    size_list_cr_df_new = size_list_cr_df[(size_list_cr_df.iloc[:, 1] <= 40) | (size_list_cr_df.iloc[:, 1] == 120)]
+    size_list_cr_df_new.reset_index(drop=True, inplace=True)
+
+    sorted_mr_imagefiles_new = []
+    for index in size_list_cr_df_new.iloc[:, 0]:
+        sorted_mr_imagefiles_new.append(image_list[index])
+        
+    # Resize all images to a standard size
+    for image in sorted_mr_imagefiles_new:
+        resizing_input_path = mr_inputfolder_path + 'cropped_' + image
+        resizing_output_path = mr_outputfolder_path + 'rs_' + image
+        resize_image(resizing_input_path, resizing_output_path, desired_order)
+
+    # Resizing all the masks to a standard size
+    for image in sorted_mr_imagefiles_new:
+        resizingmasks_input_path = mr_masks_dir + image
+        resizingmasks_output_path = masks_outputfolder_path + 'rs_mask_' + image
+        resize_image(resizingmasks_input_path, resizingmasks_output_path, desired_order)
     
-    #Cropping out
-    cropper = CropNonspinalVoxels(mr_image, mr_array)
-    cropped_mr_image = cropper.crop_nonspinal()
-    output_path = cropped_path + 'cropped_' + files
-    sitk.WriteImage(cropped_mr_image, output_path)
-
-
-# Eliminate images with inconsistent axis sizes
-size_list_cr_df = pd.read_csv(size_list_path)
-size_list_cr_df_new = size_list_cr_df[(size_list_cr_df.iloc[:, 1] <= 40) | (size_list_cr_df.iloc[:, 1] == 120)]
-size_list_cr_df_new.reset_index(drop=True, inplace=True)
-
-sorted_mr_imagefiles_new = []
-for index in size_list_cr_df_new.iloc[:, 0]:
-    sorted_mr_imagefiles_new.append(sorted_mr_imagefiles[index])
     
     
-# Resize all images to a standard size
-
-for image in sorted_mr_imagefiles_new:
-    resizing_input_path = mr_inputfolder_path + 'cropped_' + image
-    resizing_output_path = mr_outputfolder_path + 'rs_' + image
-    desired_order = (32, 128, 256)
-    resize_image(resizing_input_path, resizing_output_path, desired_order)
-
-# Resizing all the masks to a standard size
-for image in sorted_mr_imagefiles_new:
-    resizingmasks_input_path = mr_masks_dir + image
-    resizingmasks_output_path = masks_outputfolder_path + 'rs_mask_' + image
-    desired_order = (32, 128, 256)
-    resize_image(resizingmasks_input_path, resizingmasks_output_path, desired_order)

@@ -355,7 +355,7 @@ for epoch in range(num_epochs):
     
     # Pick out the best model
     if epoch_loss_val < val_loss_min:
-        torch.save(model.state_dict(), '/Path/to/bestmodel.pth')
+        torch.save(model.state_dict(), best_model_path)
         val_loss_min = epoch_loss_val
         print(f'Saving model at epoch {epoch+1} with validation loss {epoch_loss_val:.4f}')
     

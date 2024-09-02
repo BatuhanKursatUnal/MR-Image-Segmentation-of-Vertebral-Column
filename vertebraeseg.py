@@ -12,12 +12,16 @@ def extract_number_and_modality(mri_file):
 
     Parameters
     ----------
-    mri_file : List of image files of the dataset
+    mri_file : list of str
+        List of image files of the dataset
 
     Returns
     -------
-    subject_number : Subject number, i.e. first integer in data name
-    modality_priority: Priority determined by the way data is stored in the folder
+    subject_number : int
+        Subject number, i.e. first integer in data name.
+        
+    modality_priority: dict
+        Priority determined by the way data is stored in the folder.
 
     '''
     match = re.match(r"(\d+)_(t1|t2_SPACE|t2)\.mha", mri_file)

@@ -401,7 +401,7 @@ def preprocess_mr_images(image_list, mr_volume_dir, cropped_path, size_list_path
     for files in image_list:
         mr_images_path = os.path.join(mr_volume_dir, files)
         #Z-score Normalization
-        if __name__ == "__main__" and norm_type == 'zscore':
+        if norm_type == 'zscore':
             mr_image_path1 = mr_images_path
             normalizer = IntensityNormalizer(mr_image_path1)
             znormalized_image, znormalized_array = normalizer.zscore_normalizer() #Z-score normalization
@@ -409,7 +409,7 @@ def preprocess_mr_images(image_list, mr_volume_dir, cropped_path, size_list_path
             mr_array = znormalized_array
             
         #Min-max normalization
-        if __name__ == "__main__" and norm_type == 'minmax':
+        if norm_type == 'minmax':
             mr_image_path1 = mr_images_path
             normalizer = IntensityNormalizer(mr_image_path1)
             normalized_image, normalized_array = normalizer.minmax_normalizer() #Min-max normalization

@@ -1,3 +1,4 @@
+# Contains functions for testing set iterations and visualization of the results
 def visualize_results(images, masks, preds, slice_idx=None):
     
     """
@@ -51,34 +52,55 @@ def visualize_results(images, masks, preds, slice_idx=None):
         plt.show()
         
 
-# Testing set
-#Loading the best model chosen in validation set
-model = UNet()
-model = model.to(device)
-best_model = torch.load(best_model_path)
-model.load_state_dict(best_model)
+def unet_test(best_model_path, num_epochs, test_loader):
+    
+    '''
+    Function for testing loop of the UNet model.
 
-t2_loss = []
-for epoch in range(num_epochs):
-    model.eval()
-    with torch.no_grad():
-        epoch_loss_test = 0
-        for image_arr, mask_arr in test_loader:
-            image_arr = image_arr.unsqueeze(1)  #Adds a channel dimension at index 1
-            mask_arr = remap_labels(mask_arr, num_classes=20)
+    Parameters
+    ----------
+    best_model_path : str
+        Path to the best model selected and saved after the validation iteration.
+        
+    num_epochs : int
+        Number of epochs specified as one of the hyperparameters.
+        
+    test_loader : torch.utils.data.dataloader.DataLoader
+        Testing data loader.
 
-            test_images = image_arr.to(device, dtype=torch.float32)
-            test_masks = mask_arr.to(device, dtype=torch.long)
+    Returns
+    -------
+    None.
 
-            test_outputs =  model(test_images.float())
-            _, preds = torch.max(test_outputs, dim=1)
-            test_loss = criterion(test_outputs, test_masks)
+    '''
+    # Testing set
+    #Loading the best model chosen in validation set
+    model = UNet()
+    model = model.to(device)
+    best_model = torch.load(best_model_path)
+    model.load_state_dict(best_model)
 
-            visualize_results(test_images, test_masks, preds)
+    t2_loss = []
+    for epoch in range(num_epochs):
+        model.eval()
+        with torch.no_grad():
+            epoch_loss_test = 0
+            for image_arr, mask_arr in test_loader:
+                image_arr = image_arr.unsqueeze(1)  #Adds a channel dimension at index 1
+                mask_arr = remap_labels(mask_arr, num_classes=20)
 
-            #Validation loss in the current epoch
-            epoch_loss_test += test_loss.item()/len(test_loader)
+                test_images = image_arr.to(device, dtype=torch.float32)
+                test_masks = mask_arr.to(device, dtype=torch.long)
 
-    print("\nTest complete for this epoch.")
-    t2_loss.append(epoch_loss_test)
+                test_outputs =  model(test_images.float())
+                _, preds = torch.max(test_outputs, dim=1)
+                test_loss = criterion(test_outputs, test_masks)
+
+                visualize_results(test_images, test_masks, preds)
+
+                #Validation loss in the current epoch
+                epoch_loss_test += test_loss.item()/len(test_loader)
+
+        print("\nTest complete for this epoch.")
+        t2_loss.append(epoch_loss_test)
 

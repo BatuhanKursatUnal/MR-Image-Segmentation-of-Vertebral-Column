@@ -44,6 +44,16 @@ This is an image segmentation project that runs on Python and includes two main 
 
 ## User Manual
 
+1. User has to go to the bibliography section and acquire the dataset from there. Then, they should adjust the [configuration.txt](./configuration.txt) file according to the paths that they will be storing the initial/raw data and the subsequently processed ones with the folders and files they determined and which will be saved to their local machine or cloud.
+
+2. In the same [configuration.txt](./configuration.txt) file, one can alter the hyperparameters and other settings for some functions according to their needs and wishes.
+
+3. Then, to preprocess the raw data, one must execute the [vertebraeseg.py](./vertebraeseg.py) file and run the [preprocess_script.py](./preprocess_script.py) consequently. This will ensure that the data is preprocessed and the outcome of the preprocessing step is saved to the relevant folders selected in the step 1.
+
+4. Using the preprocessed images and masks, now, the user should execute the [unet_model.py](./unet_model.py) and [store_plot_metrics.py](./store_plot_metrics.py). After these, [train.py](./train.py) and [test_unet.py](./test_unet.py) files containing the functions to these processes must be executed.
+
+5. Finally, the user can run the [trainandtest_script.py](./trainandtest_script.py) to train, validate and test the model and eventually get the resulting predictions for masks in comparison to the ground truth masks and the metrics.
+
 
 
 
@@ -55,6 +65,7 @@ This section contains some of the resulting masks together with the correspondin
 
 
 
-### Bibliography
+## Bibliography
 
-“Spider - Grand Challenge.” Grand Challenge, spider.grand-challenge.org/data/. Accessed 31 Aug. 2024. 
+Van der Graaf, Jasper W., et al. “Lumbar spine segmentation in mr images: A dataset and a public benchmark.” Scientific Data, vol. 11, no. 1, 2 Mar. 2024, https://doi.org/10.1038/s41597-024-03090-w.  
+Van der Graaf, Jasper W., et al “Spider - Lumbar Spine Segmentation in Mr Images: A Dataset and a Public Benchmark.” Zenodo, Zenodo, 5 Mar. 2024, zenodo.org/records/10159290. 

@@ -92,7 +92,7 @@ class SpiderDataset(Dataset):
             Total number of samples
 
         '''
-       return len(self.image_path)
+        return len(self.image_path)
         
     def __getitem__(self, idx):
         
@@ -212,152 +212,137 @@ def remap_labels(mask, num_classes):
         remapped_mask[mask == old_label] = new_label
 
     return remapped_mask
+
+
+
+def unet_trainandvalidate(num_epochs, train_loader, val_loader):
     
+    '''
+    Trains and validates the U-Net model with specified hyperparameters and data 
+    loaders by iterating over epochs and calculating loss, accuracy, and F1 scores
+    for training and validation.
 
-# Set the hyperparameters
-learning_rate = 0.001
-num_epochs = 16
-batch_initial = 4
-batch_later = 4
-
-train_dataset, val_dataset, test_dataset = get_dataset(sorted_mr_imagefiles_new, images_volume_dir, masks_dir)
-
-train_loader = DataLoader(
-    dataset= train_dataset, 
-    batch_size= batch_initial, 
-    shuffle= True, 
-    num_workers= 4,
-    pin_memory= False,
-    drop_last = False
-    )
-
-val_loader = DataLoader(
-    dataset= val_dataset, 
-    batch_size= batch_initial, 
-    shuffle= False, 
-    num_workers= 4,
-    pin_memory= False,
-    drop_last = False
-    )
-
-test_loader = DataLoader(
-    dataset= test_dataset, 
-    batch_size= batch_later, 
-    shuffle= False, 
-    num_workers= 4,
-    pin_memory= False,
-    drop_last = False
-    )
+    Parameters
+    ----------
+    num_epochs: int
+        Number of epochs specified as one of the hyperparameters.
         
-# Loss function and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
-
-
-# Training step
-#Loss initialization
-t_loss = [] #Initializing an empty list to store all training losses for each epoch
-v_loss = [] #Initializing an empty list to store all validation losses for each epoch
-val_loss_min = float('inf')
-
-#Accuracy initialization
-t_acc = []
-v_acc = []
-
-#F1 score initialization
-t_f1 = []
-v_f1 = [] 
-for epoch in range(num_epochs):
-    model.train()
-    batch_count_train = 0
-    epoch_loss_train = 0
-    epoch_accuracy_train = 0
-    epoch_f1_train = 0
-    for image_arr, mask_arr in train_loader:
-        batch_count_train += 1
+    train_loader: torch.utils.data.dataloader.DataLoader
+        Training data loader.
         
-        image_arr, mask_arr = image_arr.to(device), mask_arr.to(device)
-        image_arr = image_arr.unsqueeze(1)  #Adds a channel dimension at index 1
-        mask_arr = remap_labels(mask_arr, num_classes=20)
-        
-        train_images = image_arr.to(device, dtype=torch.float32)
-        train_masks = mask_arr.to(device, dtype=torch.long)
-        
-        optimizer.zero_grad()
-            
-        #Feedforward
-        outputs = model(train_images.float())
-        t_preds = torch.argmax(outputs, dim=1)
-        t_preds = t_preds.cpu().detach().numpy().flatten()
-        t_masks = train_masks.cpu().detach().numpy().flatten()
-        loss = criterion(outputs, train_masks)
-        
-        #Feedback and optimization
-        loss.backward()
-        optimizer.step()
-        
-        #Performance metrics
-        #Loss
-        epoch_loss_train += loss.item()
-        #Accuracy
-        epoch_accuracy_train += accuracy_score(t_masks, t_preds)
-        #F1 score
-        epoch_f1_train += f1_score(t_masks, t_preds, average = 'macro')
-        
-    epoch_loss_train /= batch_count_train
-    epoch_accuracy_train /= batch_count_train
-    epoch_f1_train /= batch_count_train
+    val_loader: torch.utils.data.dataloader.DataLoader
+        Validation data loader.
 
-    print("\nTraining complete for this epoch.")
-    t_loss.append(epoch_loss_train)
-    t_acc.append(epoch_accuracy_train)
-    t_f1.append(epoch_f1_train)
+    Returns
+    -------
+    None.
 
+    '''
+    # Loss function and optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 
-    # Validation step
-    model = model.eval()
+    # Training step
+    #Loss initialization
+    t_loss, v_loss = [], [] #Initializing an empty list to store all training and validation losses for each epoch
+    val_loss_min = float('inf')
     
-    with torch.no_grad():
-        batch_count_val = 0
-        epoch_loss_val = 0
-        epoch_accuracy_val = 0
-        epoch_f1_val = 0
-        for image_arr, mask_arr in val_loader:
-            batch_count_val += 1
+    #Accuracy initialization
+    t_acc, v_acc = [], []
+
+    #F1 score initialization
+    t_f1, v_f1 = [], []
+    for epoch in range(num_epochs):
+        model.train()
+        batch_count_train = 0
+        epoch_loss_train = 0
+        epoch_accuracy_train = 0
+        epoch_f1_train = 0
+        for image_arr, mask_arr in train_loader:
+            batch_count_train += 1
+        
+            image_arr, mask_arr = image_arr.to(device), mask_arr.to(device)
             image_arr = image_arr.unsqueeze(1)  #Adds a channel dimension at index 1
             mask_arr = remap_labels(mask_arr, num_classes=20)
+        
+            train_images = image_arr.to(device, dtype=torch.float32)
+            train_masks = mask_arr.to(device, dtype=torch.long)
+        
+            optimizer.zero_grad()
             
-            val_images = image_arr.to(device, dtype=torch.float32)
-            val_masks = mask_arr.to(device, dtype=torch.long)
-
             #Feedforward
-            val_outputs =  model(val_images.float())
-            v_preds = torch.argmax(val_outputs, dim=1)
-            v_preds = v_preds.cpu().detach().numpy().flatten()
-            v_masks = val_masks.cpu().detach().numpy().flatten()
-            val_loss = criterion(val_outputs, val_masks)
-            
+            outputs = model(train_images.float())
+            t_preds = torch.argmax(outputs, dim=1)
+            t_preds = t_preds.cpu().detach().numpy().flatten()
+            t_masks = train_masks.cpu().detach().numpy().flatten()
+            loss = criterion(outputs, train_masks)
+        
+            #Feedback and optimization
+            loss.backward()
+            optimizer.step()
+        
             #Performance metrics
             #Loss
-            epoch_loss_val += val_loss.item()
+            epoch_loss_train += loss.item()
             #Accuracy
-            epoch_accuracy_val += accuracy_score(v_masks, v_preds)
+            epoch_accuracy_train += accuracy_score(t_masks, t_preds)
             #F1 score
-            epoch_f1_val += f1_score(v_masks, v_preds, average = 'macro')
+            epoch_f1_train += f1_score(t_masks, t_preds, average = 'macro')
         
-        epoch_loss_val /= batch_count_val
-        epoch_accuracy_val /= batch_count_val
-        epoch_f1_val /= batch_count_val
+        epoch_loss_train /= batch_count_train
+        epoch_accuracy_train /= batch_count_train
+        epoch_f1_train /= batch_count_train
+
+        print("\nTraining complete for this epoch.")
+        t_loss.append(epoch_loss_train)
+        t_acc.append(epoch_accuracy_train)
+        t_f1.append(epoch_f1_train)
+
+
+        # Validation step
+        model = model.eval()
+    
+        with torch.no_grad():
+            batch_count_val = 0
+            epoch_loss_val = 0
+            epoch_accuracy_val = 0
+            epoch_f1_val = 0
+            for image_arr, mask_arr in val_loader:
+                batch_count_val += 1
+                image_arr = image_arr.unsqueeze(1)  #Adds a channel dimension at index 1
+                mask_arr = remap_labels(mask_arr, num_classes=20)
+            
+                val_images = image_arr.to(device, dtype=torch.float32)
+                val_masks = mask_arr.to(device, dtype=torch.long)
+
+                #Feedforward
+                val_outputs =  model(val_images.float())
+                v_preds = torch.argmax(val_outputs, dim=1)
+                v_preds = v_preds.cpu().detach().numpy().flatten()
+                v_masks = val_masks.cpu().detach().numpy().flatten()
+                val_loss = criterion(val_outputs, val_masks)
+            
+                #Performance metrics
+                #Loss
+                epoch_loss_val += val_loss.item()
+                #Accuracy
+                epoch_accuracy_val += accuracy_score(v_masks, v_preds)
+                #F1 score
+                epoch_f1_val += f1_score(v_masks, v_preds, average = 'macro')
+        
+            epoch_loss_val /= batch_count_val
+            epoch_accuracy_val /= batch_count_val
+            epoch_f1_val /= batch_count_val
                 
-    v_loss.append(epoch_loss_val)
-    v_acc.append(epoch_accuracy_val)
-    v_f1.append(epoch_f1_val)
+            v_loss.append(epoch_loss_val)
+            v_acc.append(epoch_accuracy_val)
+            v_f1.append(epoch_f1_val)
+        
+        # Pick out the best model
+        if epoch_loss_val < val_loss_min:
+            torch.save(model.state_dict(), best_model_path)
+            val_loss_min = epoch_loss_val
+            print(f'Saving model at epoch {epoch+1} with validation loss {epoch_loss_val:.4f}')
     
-    # Pick out the best model
-    if epoch_loss_val < val_loss_min:
-        torch.save(model.state_dict(), best_model_path)
-        val_loss_min = epoch_loss_val
-        print(f'Saving model at epoch {epoch+1} with validation loss {epoch_loss_val:.4f}')
-    
-    print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}")
-    print(f"Epoch [{epoch+1}/{num_epochs}], Train Accuracy: {accuracy_train:.4f}, Val Accuracy: {accuracy_val:.4f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Train Accuracy: {accuracy_train:.4f}, Val Accuracy: {accuracy_val:.4f}")

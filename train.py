@@ -2,20 +2,16 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 import SimpleITK as sitk
 import os
-import matplotlib.pyplot as plt
 from sklearn.metrics import f1_score, accuracy_score
 
 # Use GPU if available
-model = UNet()
-torch.cuda.empty_cache()
 if torch.cuda.is_available():
     device = 'cuda'
 else:
     device = 'cpu'
-model = model.to(device)
 
 # Training the 3D U-Net
 class SpiderDataset(Dataset):

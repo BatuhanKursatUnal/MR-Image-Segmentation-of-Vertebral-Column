@@ -11,7 +11,13 @@ acc_out_path = /pathto/accuracy.csv
 f1_out_path = /pathto/f1.csv
 best_model_path = /pathto/bestmodel.pth
 mr_pathto_image = /pathto/images/image.mha
+testimage_path = /pathto/testimage.mha
+testmask_path = /pathto/testmask.mha
 
 
 [settings]
 desired_order = (32, 128, 256)
+learning_rate = 0.001
+num_epochs = 16
+batch_initial = 4
+batch_later = 4

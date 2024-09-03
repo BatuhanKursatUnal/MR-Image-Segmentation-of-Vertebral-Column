@@ -346,3 +346,17 @@ def unet_trainandvalidate(num_epochs, train_loader, val_loader):
     
         print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {loss.item():.4f}, Val Loss: {val_loss.item():.4f}")
         print(f"Epoch [{epoch+1}/{num_epochs}], Train Accuracy: {accuracy_train:.4f}, Val Accuracy: {accuracy_val:.4f}")
+        
+        
+    # Store the loss, accuracy and F1 scores
+    metrics_store = StoreMetrics(num_epochs)
+    #Loss function
+    metrics_store.store_loss(t_loss, v_loss, loss_out_path)
+    #Accuracy function
+    metrics_store.store_acc(t_acc, v_acc, acc_out_path)
+    #F1 Score
+    metrics_store.store_f1(t_f1, v_f1, f1_out_path)
+    
+    # Plot loss and accuracy scores
+    MetricPlotter.plot_loss(t_loss, v_loss)
+    MetricPlotter.plot_acc(t_acc, v_acc)

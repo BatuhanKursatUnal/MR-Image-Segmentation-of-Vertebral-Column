@@ -1,4 +1,13 @@
 # Contains functions for testing set iterations and visualization of the results
+import torch
+import matplotlib as plt
+
+# Use GPU if available
+if torch.cuda.is_available():
+    device = 'cuda'
+else:
+    device = 'cpu'
+
 def visualize_results(images, masks, preds, slice_idx=None):
     
     """

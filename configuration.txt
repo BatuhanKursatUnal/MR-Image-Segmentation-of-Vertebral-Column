@@ -5,7 +5,7 @@ size_list_path = /pathto/sizelist.csv
 cropped_path = pathto/cropped_outputfolder
 mr_inputfolder_path = /pathto/output/croppedfolder
 mr_outputfolder_path = /pathto/resizedfolder
-masks_outputfolder_path = /pathto/resized_masksfolder/
+masks_outputfolder_path = /pathto/resized_masksfolder
 loss_out_path = /pathto/loss_data.csv
 acc_out_path = /pathto/accuracy.csv
 f1_out_path = /pathto/f1.csv
@@ -13,6 +13,7 @@ best_model_path = /pathto/bestmodel.pth
 mr_pathto_image = /pathto/images/image.mha
 testimage_path = /pathto/testimage.mha
 testmask_path = /pathto/testmask.mha
+testresize_out_path = /pathto/testresize_output
 
 
 [settings]

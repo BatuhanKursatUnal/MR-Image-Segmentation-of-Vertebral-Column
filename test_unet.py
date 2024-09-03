@@ -75,8 +75,6 @@ def unet_test(best_model_path, num_epochs, test_loader):
     '''
     # Testing set
     #Loading the best model chosen in validation set
-    model = UNet()
-    model = model.to(device)
     best_model = torch.load(best_model_path)
     model.load_state_dict(best_model)
 
@@ -98,7 +96,7 @@ def unet_test(best_model_path, num_epochs, test_loader):
 
                 visualize_results(test_images, test_masks, preds)
 
-                #Validation loss in the current epoch
+                #Test loss in the current epoch
                 epoch_loss_test += test_loss.item()/len(test_loader)
 
         print("\nTest complete for this epoch.")

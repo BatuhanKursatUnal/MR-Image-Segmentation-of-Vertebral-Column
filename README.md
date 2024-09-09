@@ -55,14 +55,18 @@ This is an image segmentation project that runs on Python and includes two main 
 5. Finally, the user can run the [trainandtest_script.py](./trainandtest_script.py) to train, validate and test the model and eventually get the resulting predictions for masks in comparison to the ground truth masks and the metrics.
 
 
-
-
-
-
 ## Results
 
 This section contains some of the resulting masks together with the corresponding image and ground truth mask. In addition, it contains the loss and accuracy plots for the training and validation sets.
 
+Here are two example output masks together with the images and their corresponding ground truth masks:
+<img width="1067" alt="r1" src="https://github.com/user-attachments/assets/c693c5a3-b0ca-497d-8495-653ebc5e887b">
+<img width="1065" alt="r2" src="https://github.com/user-attachments/assets/4b794640-d2db-4d21-8941-69d5c7b52d24">
+
+
+Finally, here are loss and accuracy metrics:
+![loss](https://github.com/user-attachments/assets/a310eeb2-140b-4547-8d2a-b7221209c75c)
+![acc](https://github.com/user-attachments/assets/9b5fcf94-d36a-4cc2-9600-c1d8f57beec9)
 
 
 ## Bibliography
